@@ -20,15 +20,16 @@
 
 <h2>Edit Store</h2>
 
-<form>
+<form action="/store/{{ store.id }}" method="POST">
     <fieldset>
         <legend>Please enter your information:</legend>
 
-
-
         <!-- TODO: Remove the next paragraph and use the `form` object passed in 
             from the route to render a form. -->
-        <p><em>Form fields go here!</em></p>
+        {{ form.title.label }}
+        {{ form.title(class="title-input") }}
+        {{ form.address.label }}
+        {{ form.address(class="address-input") }}
 
         <input type="submit" value="Submit">
     </fieldset>

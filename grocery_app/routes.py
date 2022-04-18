@@ -16,7 +16,7 @@ main = Blueprint("main", __name__)
 @main.route('/')
 def homepage():
     all_stores = GroceryStore.query.all()
-    print(all_stores)
+    # print(all_stores)
     return render_template('home.html', all_stores=all_stores)
 
 @main.route('/new_store', methods=['GET', 'POST'])
@@ -78,27 +78,41 @@ def new_item():
 def store_detail(store_id):
     store = GroceryStore.query.get(store_id)
     # TODO: Create a GroceryStoreForm and pass in `obj=store`
-
+    form = GroceryStoreForm(obj=store)
     # TODO: If form was submitted and was valid:
+    if request.method == 'POST':
     # - update the GroceryStore object and save it to the database,
+        store.title = request.form.get('title')
+        store.address = request.form.get('address')
+        db.session.commit()
     # - flash a success message, and
-    # - redirect the user to the store detail page.
-
+        flash('Store was updated.')
+        # - redirect the user to the store detail page.
+        return redirect(url_for('main.store_detail', store_id = store.id))
     # TODO: Send the form to the template and use it to render the form fields
-    store = GroceryStore.query.get(store_id)
-    return render_template('store_detail.html', store=store)
+    else:
+        # store = GroceryStore.query.get(store_id)
+        return render_template('store_detail.html', store=store, form=form)
 
 @main.route('/item/<item_id>', methods=['GET', 'POST'])
 def item_detail(item_id):
     item = GroceryItem.query.get(item_id)
     # TODO: Create a GroceryItemForm and pass in `obj=item`
-
+    form = GroceryItemForm(obj=item)
     # TODO: If form was submitted and was valid:
+    if request.method == 'POST':
     # - update the GroceryItem object and save it to the database,
+        item.name = request.form.get('name')
+        item.price = request.form.get('price')
+        item.category = request.form.get('category').upper()
+        item.photo_url = request.form.get('photo_url')
+        item.store_id = request.form.get('store')
+        db.session.commit()
     # - flash a success message, and
+        flash('Item was updated successfully.')
     # - redirect the user to the item detail page.
-
+        return redirect(url_for('main.item_detail', item_id = item.id))
     # TODO: Send the form to the template and use it to render the form fields
     item = GroceryItem.query.get(item_id)
-    return render_template('item_detail.html', item=item)
+    return render_template('item_detail.html', item=item, form=form)
 
