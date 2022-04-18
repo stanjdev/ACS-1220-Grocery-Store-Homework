@@ -1,3 +1,4 @@
+from unicodedata import name
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from datetime import date, datetime
 from grocery_app.models import GroceryStore, GroceryItem
@@ -21,26 +22,57 @@ def homepage():
 @main.route('/new_store', methods=['GET', 'POST'])
 def new_store():
     # TODO: Create a GroceryStoreForm
-
+    form = GroceryStoreForm()
     # TODO: If form was submitted and was valid:
-    # - create a new GroceryStore object and save it to the database,
-    # - flash a success message, and
-    # - redirect the user to the store detail page.
+    if request.method == 'POST':
+        store_title = request.form.get('title')
+        store_address = request.form.get('address')
 
-    # TODO: Send the form to the template and use it to render the form fields
-    return render_template('new_store.html')
+        # - create a new GroceryStore object and save it to the database,
+        store = GroceryStore(
+            title = store_title,
+            address = store_address,
+        )
+        db.session.add(store)
+        db.session.commit()
+        # - flash a success message, and
+        flash('Grocery store created!')
+        # - redirect the user to the store detail page.
+        return redirect(url_for('main.store_detail', store_id = store.id))
+    else:
+        # TODO: Send the form to the template and use it to render the form fields
+        return render_template('new_store.html', form=form)
 
 @main.route('/new_item', methods=['GET', 'POST'])
 def new_item():
     # TODO: Create a GroceryItemForm
-
+    form = GroceryItemForm()
     # TODO: If form was submitted and was valid:
-    # - create a new GroceryItem object and save it to the database,
-    # - flash a success message, and
-    # - redirect the user to the item detail page.
+    if request.method == 'POST':
+        item_name = request.form.get('name')
+        item_price = request.form.get('price')
+        item_category = request.form.get('category').upper()
+        item_photo_url = request.form.get('photo_url')
+        item_store = request.form.get('store')
 
-    # TODO: Send the form to the template and use it to render the form fields
-    return render_template('new_item.html')
+    # - create a new GroceryItem object and save it to the database,
+        item = GroceryItem(
+            name = item_name,
+            price = item_price,
+            category = item_category,
+            photo_url = item_photo_url,
+            store_id = item_store
+        )
+        db.session.add(item)
+        db.session.commit()
+
+        # - flash a success message, and
+        flash('Item created.')
+        # - redirect the user to the item detail page.
+        return redirect(url_for('main.item_detail', item_id=item.id))
+    else: 
+        # TODO: Send the form to the template and use it to render the form fields
+        return render_template('new_item.html', form=form)
 
 @main.route('/store/<store_id>', methods=['GET', 'POST'])
 def store_detail(store_id):
