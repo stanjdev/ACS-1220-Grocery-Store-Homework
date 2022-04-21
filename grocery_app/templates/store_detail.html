@@ -2,9 +2,8 @@
 {% block content %}
 
 <h1>Store - {{ store.title }}</h1>
-
 <strong>Address:</strong> {{ store.address }}
-
+<p><strong>Created by: {{ store.created_by.username }}</strong></p>
 <h2>Items</h2>
 
 <div class="items">

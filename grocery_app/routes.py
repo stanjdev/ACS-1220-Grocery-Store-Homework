@@ -1,12 +1,16 @@
 from unicodedata import name
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from datetime import date, datetime
-from grocery_app.models import GroceryStore, GroceryItem
-from grocery_app.forms import GroceryStoreForm, GroceryItemForm
+from flask_bcrypt import Bcrypt
+
+from flask_login import login_required, login_user, logout_user, current_user
+from grocery_app.models import GroceryStore, GroceryItem, User
+from grocery_app.forms import GroceryStoreForm, GroceryItemForm, LoginForm, SignUpForm
 
 # Import app and db from events_app package so that we can run app
 from grocery_app.extensions import app, db
 
+bcrypt = Bcrypt(app)
 main = Blueprint("main", __name__)
 
 ##########################################
@@ -16,10 +20,12 @@ main = Blueprint("main", __name__)
 @main.route('/')
 def homepage():
     all_stores = GroceryStore.query.all()
+    print(current_user)
     # print(all_stores)
-    return render_template('home.html', all_stores=all_stores)
+    return render_template('home.html', all_stores=all_stores, current_user=current_user)
 
 @main.route('/new_store', methods=['GET', 'POST'])
+@login_required
 def new_store():
     # TODO: Create a GroceryStoreForm
     form = GroceryStoreForm()
@@ -32,6 +38,7 @@ def new_store():
         store = GroceryStore(
             title = store_title,
             address = store_address,
+            created_by = current_user,
         )
         db.session.add(store)
         db.session.commit()
@@ -44,6 +51,7 @@ def new_store():
         return render_template('new_store.html', form=form)
 
 @main.route('/new_item', methods=['GET', 'POST'])
+@login_required
 def new_item():
     # TODO: Create a GroceryItemForm
     form = GroceryItemForm()
@@ -61,7 +69,8 @@ def new_item():
             price = item_price,
             category = item_category,
             photo_url = item_photo_url,
-            store_id = item_store
+            store_id = item_store,
+            created_by = current_user,
         )
         db.session.add(item)
         db.session.commit()
@@ -75,6 +84,7 @@ def new_item():
         return render_template('new_item.html', form=form)
 
 @main.route('/store/<store_id>', methods=['GET', 'POST'])
+@login_required
 def store_detail(store_id):
     store = GroceryStore.query.get(store_id)
     # TODO: Create a GroceryStoreForm and pass in `obj=store`
@@ -95,6 +105,7 @@ def store_detail(store_id):
         return render_template('store_detail.html', store=store, form=form)
 
 @main.route('/item/<item_id>', methods=['GET', 'POST'])
+@login_required
 def item_detail(item_id):
     item = GroceryItem.query.get(item_id)
     # TODO: Create a GroceryItemForm and pass in `obj=item`
@@ -116,3 +127,39 @@ def item_detail(item_id):
     item = GroceryItem.query.get(item_id)
     return render_template('item_detail.html', item=item, form=form)
 
+
+auth = Blueprint("auth", __name__)
+
+@auth.route('/signup', methods=['GET', 'POST'])
+def signup():
+    print('in signup')
+    form = SignUpForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        user = User(
+            username = form.username.data,
+            password = hashed_password
+        )
+        db.session.add(user)
+        db.session.commit()
+        flash('Account Created.')
+        print('created')
+        return redirect(url_for('auth.login'))
+    print(form.errors)
+    return render_template('signup.html', form=form)
+
+@auth.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        found_user = User.query.filter_by(username=form.username.data).first()
+        login_user(found_user, remember=True)
+        next_page = request.args.get('next')
+        return redirect(next_page if next_page else url_for('main.homepage'))
+    return render_template('login.html', form=form)
+
+@auth.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('main.homepage'))
